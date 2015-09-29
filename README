@@ -1,0 +1,240 @@
+                                                __           __ __
+                ___________    __        _____ / /_   ___   / // /
+               / __  __  _ \  / /______ / ___// __ \ / _ \ / // / 
+              / / / / / / \ \/ //_____/(__  )/ / / //  __// // /
+             /_/ /_/ /_/   \  /       /____//_/ /_/ \___//_//_/ 
+                         __/ /
+                        /___/  
+
+===============================================================================
+                       Linux Shell Implementation In C
+===============================================================================
+该程序实现了一个类Linux环境的命令行输入的shell，需要在Linux环境下运作实现，
+功能如下：
+1. 大部分外部指令
+2. 大部分内部指令的基本功能
+3. 查看和使用环境变量
+4. 使用echo输出环境变量
+5. 针对本程序的内部指令实现了输入流重定向（stdin: <）
+6. 针对所有指令实现了输出流重定向（stdout: >, >>）
+7. 支持后台运行功能，使用“&”实现（ls &)
+8. 支持从批处理文件中逐行读取指令并执行
+
+
+===============================================================================
+                                    Attention
+===============================================================================
+makefile文件和所有源程序以及readme在编译时应该放置在同一目录下。
+生成的可执行文件myshell也应该放置在同一目录下。
+请勿改变myshell和readme的文件位置，否则可能出现不可预知错误。
+执行myshell时请至该文件所处目录下进行执行
+Ex:
+Shell name: myshell
+user name: user
+hostname: Linux
+bash prompt: ~$
+
+user@Linux:/home/user$ ls
+myshell readme [其他文件]
+user@Linux:/home/user$ ./myshell
+[myshell]user@Linux:/home/user$ quit
+user@Linux:/home/user$ cd ..
+user@Linux:/home$ ./user/shell
+#这种情况下虽然能进入myshell，但无法使用help等指令
+
+
+===============================================================================
+                              Input/Output Format
+===============================================================================
+每次从标准输入“stdin”读入一行指令并执行该指令，当读入quit时退出程序。
+在没有重定向的情况下，对应输出到标准输出“stdout”。
+
+指令和参数之间、各个参数之间必须由一个或多个tab或空格键分隔。
+
+Ex:
+[myshell]user@Linux:/home/user$ echo Hello World!
+Hello World!
+
+
+===============================================================================
+                          Redirection of Input/Output
+===============================================================================
+1. 重定向输入：<
+使用“<”作分隔，之后跟上一个文件名，以只读的方式读取文件内容，替换“<”所在的位置。
+“<”的前后必须有空格或tab分隔。
+
+一行若有多个重定向输入，只重定向第一个文件，其余的视为参数。
+
+对dir, environ, echo, help, myshell, cd有效。
+
+Ex:
+a: Hello World!
+
+[myshell]user@Linux:/home/user$ echo < a
+Hello World!
+
+
+2. 重定向输出：>
+使用“>”作分隔，之后跟上一个文件名，若文件不存在则创建文件。
+之后将标准输出重定向到该文件，并覆盖文件原有内容。
+“>”的前后必须有空格或tab分隔。
+
+一行若有多个重定向输出，只重定向第一个文件，其余的视为参数。
+
+Ex:
+[myshell]user@Linux:/home/user$ echo Hello world! > a
+[myshell]user@Linux:/home/user$ cat a
+Hello world!
+[myshell]user@Linux:/home/user$ echo Hello > a world!
+[myshell]user@Linux:/home/user$ cat a
+Hello world!
+
+3. 重定向输出：>>
+使用“>>”作分隔，之后跟上一个文件名，若文件不存在则创建文件。
+之后将标准输出重定向到该文件，将内容添加到原文件末尾。
+“>>”的前后必须有空格或tab分隔。
+
+一行若有多个重定向输出，只重定向第一个文件，其余的视为参数。
+
+Ex:
+[myshell]user@Linux:/home/user$ echo Hello world! > a
+[myshell]user@Linux:/home/user$ cat a
+Hello world!
+[myshell]user@Linux:/home/user$ echo Hello >> a world!
+[myshell]user@Linux:/home/user$ cat a
+Hello world!
+Hello world!
+
+说明：
+一行可以同时包含重定向输入和重定向输出，但都只能包含一个
+
+Ex:
+a: Hello world!
+
+[myshell]user@Linux:/home/user$ echo < a > b
+[myshell]user@Linux:/home/user$ cat b
+Hello world!
+
+
+===============================================================================
+                                 Background
+===============================================================================
+后台运行：&
+使用“&”作分隔，将之前的命令在后台运行。
+本程序的后台实现是通过创建子进程实现，可通过kill结束进程。
+“&”前后必须有空格或tab分隔。
+
+Ex:
+[myshell]user@Linux:/home/user$ echo Hello world! &
+
+
+===============================================================================
+                                 Instructions
+===============================================================================
+$:
+$environ
+输出名为environ的环境变量，若不存在则输出不存在
+Ex:
+[myshell]user@Linux:/home/user$ $PWD
+/home/user
+
+
+cd:
+cd [direction]
+改变当前工作目录为direction所指的目录，若目录不存在则不作改变。
+若没有参数则跳转至该用户的主目录。
+只接受一个参数，多余的参数会被忽略。
+该指令会改变环境变量PWD的值为当前工作目录。
+Ex:
+[myshell]user@Linux:/home/user$ cd ..
+[myshell]user@Linux:/home$ $PWD
+/home
+
+
+clr:
+clr
+清空当前屏幕，所有参数都将被忽略。
+Ex:
+[myshell]user@Linux:/home/user$ clr
+
+
+dir:
+dir [director-list]
+按字典序列出目录director的内容，包括隐藏文件。
+若无参数则列出当前工作目录的内容。
+Ex:
+[myshell]user@Linux:/home/user$ dir
+.	..	myshell
+[myshell]user@Linux:/home/user$ cd . ..
+.:
+. 	..	myshell
+
+..:
+.	..	user
+
+
+environ:
+environ [env-list]
+列出环境变量env的值。
+若没有参数则列出当前所有环境变量。
+Ex:
+[myshell]user@Linux:/home/user$ environ $PWD
+PWD=/home/user
+
+
+echo:
+echo [comment-list]
+输出comment-list的内容并换行，多个空格和tab会被缩减为一个空格。
+“$”开头的字段会被视为环境变量并转义。
+若没有参数则输出空行。
+Ex:
+[myshell]user@Linux:/home/user$ echo Now the pwd is $PWD
+Now the pwd is /home/user
+[myshell]user@Linux:/home/user$ echo
+
+[myshell]user@Linux:/home/user$
+
+
+help:
+help [pattern]
+只接受至多一个参数，若有参数，则从第一次出现pattern的位置开始显示。
+若无参数，则从头开始显示。
+在显示过程中可以使用more命令过滤。
+即该显示通过子进程调用more完成。
+
+
+quit:
+quit
+退出shell。
+多余的参数会被忽略。
+Ex:
+[myshell]user@Linux:/home/user$ quit
+user@Linux:/home/user$
+
+
+myshell:
+myshell [file]
+从file中逐行提取命令行输入并实现，当到达文件尾时退出。
+必须有一个参数，多余参数会被忽略。
+Ex:
+a:
+echo Hello world!
+cat a
+[myshell]user@Linux:/home/user$ myshell a
+Hello world!
+echo Hello world!
+cat a
+
+
+其他外部指令请查阅bash文档
+
+
+===============================================================================
+                               Environment Variables
+===============================================================================
+特殊环境变量：
+shell=<pathname>/myshell
+其中pathname为myshell所在的目录（前提为执行该文件的位置为pathname）
+
+parent=<pathname>/myshell
+所有在myshell中创建的子程序都有一个名为parent的环境变量。
